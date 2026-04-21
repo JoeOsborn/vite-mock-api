@@ -20,9 +20,7 @@ export type MockApiHandlerRequest = IncomingMessage & {
   body?: any;
 };
 
-export type MockApiHandlerResponse = ServerResponse<IncomingMessage> & {
-  json: (data: { [key: string]: any }) => void;
-};
+export type MockApiHandlerResponse = ServerResponse<IncomingMessage>;
 
 export type MockHandler = {
   path: string;
@@ -58,16 +56,10 @@ const getMergedHandlerRequest = (req: MockApiHandlerRequest) => {
   return mergedRequest;
 };
 
-const getMergedHandlerResponse = (res: ServerResponse<IncomingMessage>) => {
-  const mergedResponse = {
-    ...res,
-    json: (data) => {
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify(data));
-    },
-  } as MockApiHandlerResponse;
-  return mergedResponse;
-};
+export function setJSON(res: ServerResponse<IncomingMessage>, json:object) {
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(json));
+}
 
 const setHandlerInMiddleware = async (
   server: ViteDevServer,
@@ -102,7 +94,7 @@ const setHandlerInMiddleware = async (
     server.middlewares.use(apiPath, (req, res) => {
       const [handlerReq, handlerRes] = [
         getMergedHandlerRequest(req),
-        getMergedHandlerResponse(res),
+        res,
       ];
 
       return apiHandler(handlerReq, handlerRes);
