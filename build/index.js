@@ -1,6 +1,30 @@
 import path from "node:path";
 import { writeFileSync, watchFile } from "node:fs";
 import { build } from "esbuild";
+const getMergedHandlerRequest = (req) => {
+    const { body } = req;
+    const originUrl = (req.headers.origin || "http://localhost:5173") + req.url;
+    const search = new URL(originUrl).search || "";
+    const searchParams = new URLSearchParams(search);
+    const paramKeys = Array.from(searchParams.keys());
+    const handlerParams = {};
+    if (paramKeys.length) {
+        for (const key of paramKeys) {
+            const paramValue = searchParams.get(key);
+            if (paramValue) {
+                handlerParams[key] = paramValue;
+            }
+        }
+    }
+    const mergedRequest = {
+        ...req,
+        headers: req.headers,
+        query: handlerParams,
+        params: handlerParams,
+        body,
+    };
+    return mergedRequest;
+};
 export function setJSON(res, json) {
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(json));
@@ -25,7 +49,13 @@ const setHandlerInMiddleware = async (server, mockFilesDir) => {
         handlers = handlers.default;
     }
     for (const { path: apiPath, handler: apiHandler } of handlers) {
-        server.middlewares.use(apiPath, apiHandler);
+        server.middlewares.use(apiPath, (req, res) => {
+            const [handlerReq, handlerRes] = [
+                getMergedHandlerRequest(req),
+                res,
+            ];
+            return apiHandler(handlerReq, handlerRes);
+        });
     }
 };
 const mockFileWatcher = async (server, mockFilesDir) => {

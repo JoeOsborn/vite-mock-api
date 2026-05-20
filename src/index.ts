@@ -14,13 +14,46 @@ export interface MockApiPlugin {
   (options?: MockApiPluginOptions): PluginOption;
 }
 
-export type MockApiHandlerRequest = IncomingMessage;
+export type MockApiHandlerRequest = IncomingMessage & {
+  params?: { [key: string]: string };
+  query?: { [key: string]: string };
+  body?: any;
+};
 
 export type MockApiHandlerResponse = ServerResponse<IncomingMessage>;
 
 export type MockHandler = {
   path: string;
   handler: (req: MockApiHandlerRequest, res: MockApiHandlerResponse) => void;
+};
+
+const getMergedHandlerRequest = (req: MockApiHandlerRequest) => {
+  const { body } = req;
+  const originUrl = (req.headers.origin || "http://localhost:5173") + req.url;
+  const search = new URL(originUrl).search || "";
+
+  const searchParams = new URLSearchParams(search);
+  const paramKeys = Array.from(searchParams.keys());
+
+  const handlerParams: { [key: string]: string } = {};
+  if (paramKeys.length) {
+    for (const key of paramKeys) {
+      const paramValue = searchParams.get(key);
+      if (paramValue) {
+        handlerParams[key] = paramValue;
+      }
+    }
+  }
+
+  const mergedRequest = {
+    ...req,
+    headers: req.headers,
+    query: handlerParams,
+    params: handlerParams,
+    body,
+  } as MockApiHandlerRequest;
+
+  return mergedRequest;
 };
 
 export function setJSON(res: ServerResponse<IncomingMessage>, json:object) {
@@ -58,7 +91,14 @@ const setHandlerInMiddleware = async (
   }
 
   for (const { path: apiPath, handler: apiHandler } of handlers) {
-    server.middlewares.use(apiPath, apiHandler);
+    server.middlewares.use(apiPath, (req, res) => {
+      const [handlerReq, handlerRes] = [
+        getMergedHandlerRequest(req),
+        res,
+      ];
+
+      return apiHandler(handlerReq, handlerRes);
+    });
   }
 };
 

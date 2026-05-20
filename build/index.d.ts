@@ -8,7 +8,15 @@ export interface MockApiPlugin {
     (): PluginOption;
     (options?: MockApiPluginOptions): PluginOption;
 }
-export type MockApiHandlerRequest = IncomingMessage;
+export type MockApiHandlerRequest = IncomingMessage & {
+    params?: {
+        [key: string]: string;
+    };
+    query?: {
+        [key: string]: string;
+    };
+    body?: any;
+};
 export type MockApiHandlerResponse = ServerResponse<IncomingMessage>;
 export type MockHandler = {
     path: string;
