@@ -11,7 +11,8 @@
     "declaration": true,
     "noEmit": false,
     "lib": ["esnext", "dom"],
-    "outDir": "build"
+    "outDir": "build",
+    "rootDir": "src"
   },
   "include": ["src/**/*.ts"]
 }

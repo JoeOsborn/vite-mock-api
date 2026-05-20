@@ -1,6 +1,5 @@
 import typescript from "@rollup/plugin-typescript";
 import dts from "rollup-plugin-dts";
-import { terser } from "rollup-plugin-terser";
 const config = [
   {
     input: "build/index.js",
@@ -17,7 +16,7 @@ const config = [
       },
     ],
     external: ["esbuild"],
-    plugins: [typescript(), terser()],
+    plugins: [typescript()],
   },
   {
     input: "build/index.d.ts",
