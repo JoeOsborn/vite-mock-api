@@ -58,14 +58,7 @@ const setHandlerInMiddleware = async (
   }
 
   for (const { path: apiPath, handler: apiHandler } of handlers) {
-    server.middlewares.use(apiPath, (req, res) => {
-      const [handlerReq, handlerRes] = [
-	req,
-        res,
-      ];
-
-      return apiHandler(handlerReq, handlerRes);
-    });
+    server.middlewares.use(apiPath, apiHandler);
   }
 };
 
